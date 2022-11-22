@@ -5,7 +5,7 @@ uniform vec2 u_translation;
 uniform vec2 u_rotation;
 uniform vec2 u_scale;
 uniform vec2 u_texRotation;
-attribute vec2 a_texcoord;
+//attribute vec2 a_texcoord;
 varying vec2 v_texcoord;
 
 void main(){
