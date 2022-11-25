@@ -4,6 +4,7 @@ uniform vec2 u_mouse;
 uniform float u_time;
 varying vec2 v_texcoord;
 uniform sampler2D u_texture;
+uniform vec4 u_color;
 
 void main(){
 //   vec2 st = gl_FragCoord.xy/u_resolution.xy;
@@ -33,9 +34,15 @@ void main(){
     // sin(st.x / 15. + u_time * 3.) * 0.001 )
     st.y)
   );
-  if (gl_FragColor.r == 1.0){
-    gl_FragColor = vec4(0.,0.,0.,0.);
-  }
+  gl_FragColor = vec4(
+    gl_FragColor.r + u_color.r,
+    gl_FragColor.g + u_color.g,
+    gl_FragColor.b + u_color.b,
+    gl_FragColor.a + u_color.a
+  );
+  // if (gl_FragColor.r == 1.0){
+  //   gl_FragColor = vec4(0.,0.,0.,0.);
+  // }
   // gl_FragColor = vec4(
   //   gl_FragColor.x, 
   //   gl_FragColor.y + sin(u_time) * 0.002,

@@ -2,6 +2,7 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform float u_time;
+uniform vec4 u_color;
 
 float drawRect(vec2 st,  vec2 tr_offset, vec2 bl_offset){
     // float size = 1.0 - _size;
@@ -148,6 +149,7 @@ void main(){
 
     vec3 bg = vec3(0.0353, 0.1412, 0.2353);
     vec3 color = vec3(bg + (test + test2));
+
     if(color.r == bg.r ){
         gl_FragColor = vec4(0.);
     } else{
