@@ -8,22 +8,13 @@ const GlobalTimer = require("./src/GlobalTimer")
 const { EventBus, MidiTracker } = require("./src/eventBus")
 const { runDummyEvents, makeMidiMessage } = require("./src/testEvents")
 const { createGLBoilerplate, setUniforms, setupImage } = require("./src/boilerPlateHelpers")
-// Some dummy textures to play with
+const { WebMidi } = require("webmidi")
+
+  // Some dummy textures to play with
 const fImg = require("./src/img/f-texture.png")
 const spriteImg = require("./src/img/sprite.png")
 
 let overrides = {}
-
-// Midi API really only works on Chrome at this date
-if (navigator.requestMIDIAccess) {
-  console.log('This browser supports WebMIDI!');
-} else {
-  console.log('WebMIDI is not supported in this browser.');
-}
-navigator.requestMIDIAccess()
-  .then(onMIDISuccess, onMIDIFailure);
-
-
 
 const globalTimer = new GlobalTimer()
 const eventBus = new EventBus();
@@ -94,25 +85,19 @@ runDummyEvents(midiTracker)
 const MIDI_CLOCK_MSG = 248
 const MIDI_STOP_MSG = 252
 
-function onMIDISuccess(midiAccess) {
-  console.log(midiAccess);
 
-  var inputs = midiAccess.inputs;
-  var outputs = midiAccess.outputs;
-  console.log(inputs, outputs)
-  Array.from(midiAccess.inputs).forEach((input) => {
-    input[1].onmidimessage = (msg) => {
-
-      if (msg.data.length == 1 && msg.data[0] == MIDI_CLOCK_MSG) {
-        midiTracker.tick()
-      } else if (msg.data.length == 1 && msg.data[0] == MIDI_STOP_MSG) {
-
-      } else {
+const onWebMidiEnabled = () => {
+  const midiInput = WebMidi.getInputByName("loopMIDI Port")
+  midiInput.addListener("midimessage", (e)=>{
+    console.log(e)
+    if(e.data[0] == MIDI_CLOCK_MSG ){
+      midiTracker.tick()
     }
-  }
-})
+  })
 }
-
+WebMidi.enable()
+  .then(onWebMidiEnabled)
+  .catch(()=> console.log("Could not init webmidi"))
 function onMIDIFailure() {
   console.log('Could not access your MIDI devices.');
 }
