@@ -41,13 +41,14 @@ const updateTimers = (timeElapsedSinceStart) => {
   last_time = timeElapsedSinceStart
 }
 const spawnTimer = (name, type="INC") => {
-  console.log("Spawning", name)
+  // console.log("Spawning", name)
+  // delete timers[name]
   timers[name] = {
     timeStarted: globalTimer.getSecondsElapsed(),
     name,
     type,
     value: 0,
-    runUntil: 10,
+    runUntil: 2,
     hasRunFor: 0, 
   }
 }
@@ -63,7 +64,6 @@ eventBus.subscribe("nameEvent", (func, num) => {
   }
 });
 eventBus.subscribe("nTicksTest", (func, num) => {
-  console.log("N Ticks Test")
 })
 eventBus.subscribe("nuTimer", (func, num) => {
   func()
@@ -71,12 +71,10 @@ eventBus.subscribe("nuTimer", (func, num) => {
 
 eventBus.subscribe("runNow", (func, num) => {
   func()
-  spawnTimer("nu_time")
 
 })
 
 eventBus.subscribe("runOnce",(func) => {
-  console.log("Spawning nu timer")
   spawnTimer("nu_time")
 })
 
@@ -85,15 +83,54 @@ runDummyEvents(midiTracker)
 const MIDI_CLOCK_MSG = 248
 const MIDI_STOP_MSG = 252
 
-
 const onWebMidiEnabled = () => {
   const midiInput = WebMidi.getInputByName("loopMIDI Port")
+  midiInput.addListener("clock", (e) => {
+    midiTracker.tick(e)
+  })
   midiInput.addListener("midimessage", (e)=>{
-    console.log(e)
     if(e.data[0] == MIDI_CLOCK_MSG ){
-      midiTracker.tick()
     }
   })
+  midiInput.addListener("noteon", e => {
+    // console.log(e.note.identifier);
+    // console.log("MidiEvent", e)
+    if(e.note.identifier == "C2" && e.message.channel == 9){
+      midiTracker.runEventNow(
+        {
+          name: "runNow",
+          func: () => {  spawnTimer("nu_time")},
+          num: 2
+        },
+        0,
+        1
+      )
+    }
+    if(e.note.identifier == "G#2" && e.message.channel == 9){
+      midiTracker.runEventNow(
+        {
+          name: "runNow",
+          func: () => { overrides.u_texRotation = [Math.random(), Math.random()]},
+          num: 2
+        },
+        0,
+        1
+      )
+    }
+  if(e.note.identifier == "D2" && e.message.channel == 9){
+    console.log("Snareeee")
+    midiTracker.runEventNow(
+      {
+        name: "runNow",
+        func: () => { overrides.u_color = [Math.random(), Math.random(), Math.random(), Math.random()]},
+        num: 2
+      },
+      0,
+      1
+    )
+  }
+
+})
 }
 WebMidi.enable()
   .then(onWebMidiEnabled)
@@ -195,7 +232,9 @@ function drawScene(){
   util.resizeCanvasToDisplaySize(gl.canvas)
   const vals = {
     u_time: timers?.nu_time?.value || 0,
-    u_resolution: [gl.canvas.width, gl.canvas.height]
+    u_resolution: [gl.canvas.width, gl.canvas.height],
+    u_texRotation: overrides.u_texRotation,
+    u_color: overrides.u_color,
   }
   updateTimers(globalTimer.getSecondsElapsed())
   const config_vals = Object.assign({}, vals, ui_values, overrides)
@@ -233,7 +272,7 @@ function drawScene(){
       num_verts : 0,
     }
   )
-  
+
   setUniforms(gl, glPipelines.programTwo, {
     "u_time"        : {value: config_vals.u_time       , },
     "u_resolution"  : {value: config_vals.u_resolution , },
@@ -261,21 +300,21 @@ function drawScene(){
     }
   )
 
-  setUniforms(gl, glPipelines.programOne, {
-    "u_time"        : {value: config_vals.u_time       , },
-    "u_resolution"  : {value: config_vals.u_resolution , },
-    "u_translation" : {value: config_vals.u_translation, },
-    "u_rotation"    : {value: config_vals.u_rotation   , },
-    "u_scale"       : {value: config_vals.u_scale      , },
-    "u_color"       : {value: config_vals.u_color      , },
-  })
-  // Alpha setup
-  gl.enable(gl.BLEND)
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  gl.disable(gl.DEPTH_TEST);
+  // setUniforms(gl, glPipelines.programOne, {
+  //   "u_time"        : {value: config_vals.u_time       , },
+  //   "u_resolution"  : {value: config_vals.u_resolution , },
+  //   "u_translation" : {value: config_vals.u_translation, },
+  //   "u_rotation"    : {value: config_vals.u_rotation   , },
+  //   "u_scale"       : {value: config_vals.u_scale      , },
+  //   "u_color"       : {value: config_vals.u_color      , },
+  // })
+  // // Alpha setup
+  // gl.enable(gl.BLEND)
+  // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  // gl.disable(gl.DEPTH_TEST);
 
-  setRectangle( gl, 0, 0, window.innerWidth, window.innerHeight )
-  gl.drawArrays(primitiveType, 0, 18);
+  // setRectangle( gl, 0, 0, window.innerWidth, window.innerHeight )
+  // gl.drawArrays(primitiveType, 0, 18);
 
 }
 

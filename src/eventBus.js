@@ -144,7 +144,8 @@ class MidiTracker {
   busLength
   bus
   tickIndex
-
+  clockTickTimes = []
+  bpm = 0
   constructor(eventBus, busLength, initBus = [], tickIndex = 0) {
     this.eventBus = eventBus
     this.busLength = busLength
@@ -152,17 +153,28 @@ class MidiTracker {
     this.bus = initBus.length > 0 ? initBus : new Array(this.busLength).fill([])
     this.tickIndex = tickIndex
   }
-  
+
+  handleClock(e){
+    console.log("e", e)
+    if(this.clockTickTimes.length){
+      this.bpm = 60000 / ((e.timestamp - this.clockTickTimes[1]) * 12) // seems like bsp has 12 ppqn
+    }
+    this.clockTickTimes.unshift(e.timestamp)
+    if(this.clockTickTimes.length > 5 ){
+      this.clockTickTimes.pop()
+    }
+    console.log(this.bpm)
+  }
   nudgeTick(offset){
     this.tickIndex = this.tickIndex + offset
   }
-  tick(){
-    console.log("Midi tick success")
+  tick(e){
     this.runAllEventsOnTick(this.tickIndex)
     this.tickIndex = this.tickIndex + 1
     if(this.tickIndex >= this.busLength ){
       this.tickIndex = 0
     }
+    this.handleClock(e)
     // console.log("Running all events on current tick", this.tickIndex)
   }
   initEventBus(){
@@ -196,7 +208,6 @@ class MidiTracker {
     this.bus[tickToAddTo] = [...this.bus[tickToAddTo], this.eventDecorator(_event, true)]
   }
   runEventNow(_event ){
-    console.log("Run now event")
     this.publishEvent(this.eventDecorator(_event, true))
   }
   publishEvent(decoratedEvent) {
