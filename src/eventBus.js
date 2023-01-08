@@ -145,25 +145,44 @@ class MidiTracker {
   bus
   tickIndex
   clockTickTimes = []
-  bpm = 0
-  constructor(eventBus, busLength, initBus = [], tickIndex = 0) {
+  bpm = null
+  quarterNoteTime
+  constructor(eventBus, busLength, PPQN = 24 , initBus = [], tickIndex = 0) {
     this.eventBus = eventBus
     this.busLength = busLength
     this.initBus = initBus
     this.bus = initBus.length > 0 ? initBus : new Array(this.busLength).fill([])
     this.tickIndex = tickIndex
+    this.PPQN = PPQN
   }
-
-  handleClock(e){
-    console.log("e", e)
-    if(this.clockTickTimes.length){
-      this.bpm = 60000 / ((e.timestamp - this.clockTickTimes[1]) * 12) // seems like bsp has 12 ppqn
+  getTimeForNoteLength(note_division, inMillis){
+    // Input can be like 1/8 or 2 etc
+    // console.log(`the time for ${note_division} is ${this.measureTime * note_division}`)
+    return this.measureTime * note_division / (inMillis ? 1000 : 1)
+  }
+  handleBPM(e){
+    if(this.clockTickTimes.length > 1){
+      // We get the delta from each timestamp from the previous one
+      const mapped_deltas = this.clockTickTimes.map((_, index) => {
+        if(index == 0){
+          return null
+        }
+        // [mostRecent, previous]
+        return this.clockTickTimes[index - 1] - this.clockTickTimes[index]
+      })
+      // Remove the null
+      mapped_deltas.shift()
+      // Find the average time between ticks
+      const average = mapped_deltas.reduce((acc,cur) => (acc+cur), 0) / (this.clockTickTimes.length - 1)
+      // Average between ticks times the number of pulses per quarter note * 4
+      this.measureTime = average * this.PPQN * 4
+      this.bpm = 60000 / (average * this.PPQN)
+      // console.log(this.bpm,this.measureTime, this.measureTime / 24 / 4,average,this.getTimeForNoteLength(1/8))
     }
     this.clockTickTimes.unshift(e.timestamp)
     if(this.clockTickTimes.length > 5 ){
       this.clockTickTimes.pop()
     }
-    console.log(this.bpm)
   }
   nudgeTick(offset){
     this.tickIndex = this.tickIndex + offset
@@ -174,7 +193,7 @@ class MidiTracker {
     if(this.tickIndex >= this.busLength ){
       this.tickIndex = 0
     }
-    this.handleClock(e)
+    this.handleBPM(e)
     // console.log("Running all events on current tick", this.tickIndex)
   }
   initEventBus(){
